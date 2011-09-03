@@ -1,0 +1,34 @@
+---
+layout: post
+---
+
+<p>Los usuarios de OS X nos hemos encontrado con que en Leopard el sistema se comporta de una manera nueva y bastante <em>sospechosa</em> a la hora de aplicar las actualizaciones importantes.  Cualquier <em>update</em> del sistema que requiera de un reinicio será descargada y aparecerá un diálogo avisándonos si queremos reiniciar el Mac para completar la actualización: por lo general en Tiger y versiones anteriores este éra el último paso antes de terminar, pero en Leopard si respondemos que queremos reiniciar nos encontramos con que el sistema se cierra pero nos quedamos en una pantalla azul que muestra un diálogo donde, en efecto, se muestra el proceso de copia de los archivos actualizados.  ¿Por qué las anteriores versiones de Mac OS X realizaban esta copia en <em>background</em> y ahora no?</p>
+
+<p>La respuesta breve es que los ingenieros de Apple han decidido modificar el proceso de actualización de los ficheros <strong>críticos</strong> del sistema para evitar problemas que podrían dejar nuestro Mac en un estado incapaz de arrancar de nuevo el sistema operativo.</p>
+<p>Para entrar en detalle: cualquier usuario de Tiger recuerda que, durante el proceso de instalación de una actualización de software (bien sea un parche o una aplicación grande), hay una fase llamada «Optimizando el sistema».  Esta descripción bastante vaga se corresponde con un proceso conocido como el <em>prebinding</em> de las librerías dinámicas del sistema.  </p>
+<h3>Prebinding</h3>
+<p>Por lo general, cuando uno construye una aplicación, el enlazador estático registra aquellos símbolos (funciones u otros objetos) que no se encuentran definidos en el propio código de la aplicación y los marca como <em>no definidos</em>.  Cuando el usuario activa una aplicación en este estado, entra en juego el enlazador dinámico (<tt>dyld</tt>) cuya tarea es mapear las librerías dinámicas en el espacio de la aplicación y encajar las refeencias no definidas con enlaces a las direcciones asignadas a cada símbolo de la librería dinámica.</p>
+
+<p>Este proceso es relativamente costoso, y para aliviarlo se recurre a un pequeño truco. ¿Qué pasaría si cada librería dinámica delcarase de alguna manera un rango de direcciones propio, donde sería mapeada por el enlazador dinámico?  En tal caso, cuando se montase una aplicación contra una librería dinámica el enlazador no tendría por qué dejar los símbolos sin definir sino que conociendo las direcciones preenlazables para cada librería dinámica podría calcular las posiciones exactas para cada símbolo.  El enlazador dinámico, por tanto, sólo tendría que hacer la sencilla tarea de mapear la librería dinámica en el espacio de direcciones del proceso en la posición deseada. </p>
+<p>En cuanto a las direcciones <em>favoritas</em>, Apple se reserva cierto número de ellas y deja otros rangos para librerías de terceros.  Podemos ver si un binario está enlazado de esta manera utilizando el comando <tt>/usr/bin/ootool</tt>:</p>
+<pre><code>
+Tamarindo:Applications juan$ otool -hv /usr/lib/libc.dylib
+/usr/lib/libc.dylib:
+Mach header
+      magic cputype cpusubtype  caps    filetype ncmds sizeofcmds      flags
+   MH_MAGIC    I386        ALL  0x00       DYLIB    11       1656   NOUNDEFS DYLDLINK TWOLEVEL
+</code></pre>
+<p>Todo este rollo viene a cuento por el hecho de que cuando se instalan las librerías críticas, las <em>direcciones predeterminadas</em> de las mismas pueden cambiar y entonces hay que repasar todas las aplicaciones y ejecutar el costoso proceso de calcular las referencias de los símbolos<br />
+definidos en librerías dinámicas.</p>
+
+<p>Este es el proceso que el instalador de Mac OS X describe como «Optimizando el sistema»</p>
+<h3>El horror&#8230;</h3>
+<p>El problema es que <a href="http://unsanity.org/archives/2007_03.php">el proceso de prebinding tiene un espantoso bug</a>.  Si varios procesos están actualizando a la vez la información de prebinding de una librería&#8230; en ciertos casos es posible que la librería termine convertida en ceros: se borran los contenidos y se reemplazan por <strong>nada</strong>.  </p>
+<p>El escenario sería el siguiente: el sistema ha terminado copiar en <em>background</em> las nuevas librerías.  Como hemos visto, hay que actualizar toda la información de <em>prebinding</em> y comienza el proceso de «optimización».  Pero en ese momento, el usuario lanza una aplicación<br />
+
+que, por casualidad, utiliza una de las nuevas librerías.  <tt>dyld</tt> comenzará, también, a ejecutar el proceso de <em>prebinding</em> para esta aplicación&#8230; y en ese momento el proceso de actualización del sistema llega a la misma librería y se pone también a actualizarla&#8230;</p>
+<p>Obviamente la posibilidad de que esto ocurra es bastante remota&#8230; pero <strong>es real</strong> y puede ocurrir en cualquier actualización: iTunes, QuickTime, una actualización de seguridad&#8230;  Los de <a href="http://www.unsanity.org">Unsanity</a> recomiendan simplemente <strong>no<br />
+
+hacer nada con nuestro Mac mientras dure la actualización</strong></p>
+<h3>La solución en Leopard</h3>
+<p>Parece que el problema tiene difícil solución porque Apple escoge tirar por la calle de enmedio: simplemente realizar el proceso de instalación durante el cierre del sistema.  Sencillo, menos <em>cool</em>, pero más seguro.</p>

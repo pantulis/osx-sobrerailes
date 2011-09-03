@@ -1,0 +1,31 @@
+---
+layout: nil
+---
+<?xml version="1.0"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+ 
+  <title>OS X Sobre Raíles</title>
+  <link href="http://macos.sobrerailes.com/"/>
+  <link type="application/atom+xml" rel="self" href="http://macos.sobrerailes.com/feed"/>
+  <updated>{{ site.time | date_to_xmlschema }}</updated>
+  <id>http://macos.sobrerailes.com/</id>
+  <author>
+    <name>Juan Lupión</name>
+    <email>pantulis@gmail.com</email>
+  </author>
+
+  {% for post in site.posts %}
+  <entry>
+    <id>http://coyled.com{{ post.id }}</id>
+    <link type="text/html" rel="alternate" href="{{ post.url }}"/>
+    <title>{{ post.title }}</title>
+    <updated>{{ post.date | date_to_xmlschema }}</updated>
+    <author>
+      <name>Juan Lupión</name>
+      <uri>http://macos.sobrerailes.com/</uri>
+    </author>
+    <content type="html">{{ post.content | xml_escape }}</content>
+  </entry>
+  {% endfor %}
+ 
+</feed>

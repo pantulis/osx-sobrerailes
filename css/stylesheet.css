@@ -1,0 +1,43 @@
+@font-face {
+	font-family: 'Museo500';
+	src: url('museo500-regular-webfont.eot');
+	src: local('â˜º'), url('museo500-regular-webfont.woff') format('woff'), url('museo500-regular-webfont.ttf') format('truetype'), url('museo500-regular-webfont.svg#webfontGE61TEct') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+
+body {font-family:Helvetica, Arial, sans-serif; font-size:1em; background:#eee url(../images/background.jpg) top center no-repeat; line-height:1.6em;}
+header h1 {font-family: 'Museo500'; font-weight:normal; margin-bottom:5px; color:#658484; font-size:30px; margin-top: 35px; margin-bottom: 35px;}
+h2 {font-family: 'Museo500'; font-weight:normal; padding-bottom: 15px; margin-bottom:5px; color:#656464; font-size:25px;}
+h3 {font-family: 'Museo500'; margin-bottom:5px; color:#656464; padding-top: 25px; padding-bottom: 15px;font-size: 20px;}
+h4 {font-family: 'Museo500'; margin-bottom:5px; color:#656464; font-size: 15px;}
+nav {margin-top:25px;}
+nav ul {list-style:none; float:right;}
+nav ul li {float:left;}
+nav ul li a {display:block; padding:3px 0px 3px 10px; margin-left:10px; text-decoration:none; font-size:1.3em; font-weight:100; color:#4c606a;}
+nav ul li.active a {color:#252728;}
+.line {border-top:1px solid #ccc; border-bottom:1px solid #fff; margin-bottom:15px;}
+.summary ul {list-style:none; margin:0px; padding:0px}
+.summary ul li {margin-bottom:5px;}
+.summary ul li a {text-decoration:none; color:#000; display:block; padding:4px 0px;}
+.summary ul li span {float:right; font-size:.8em; color:#777; margin-right:10px;}
+footer {color:#777; margin-top: 25px !important; font-size:.75em; text-align:center;}
+
+
+.blog_entries pre, .blog_entries code {color: #fff; background-color: black; font-size: small; overflow: auto; }
+
+
+/* blog page */
+ul.blog_entries {list-style:none; margin:0px; padding:0px;}
+ul.blog_entries li {margin-bottom:10px; }
+ul.blog_entries li h2 {margin-bottom:2px;}
+ul.blog_entries li p {margin-bottom:10px;}
+ul.blog_entries li .information {color:#666; text-shadow:-1px -1px 0px #fff; font-size:.8em;}
+.blog_side ul {list-style:none; margin:0px; padding:0px;}
+
+/* documentation pages */
+ul.documentation_articles {list-style:none; margin:0px; padding:0px;}
+
+/* article page */
+ul.other_information {list-style:none; margin:0px; padding:0px;}
+

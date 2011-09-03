@@ -1,0 +1,74 @@
+---
+layout: post
+---
+
+<p>Justo cuando ayer <a href="http://macos.sobrerailes.com/2008/11/05/backups-via-red-con-duplicity/">comentábamos que estábamos obligados a usar FTP/SFTP para acceder a nuestro espacio de backups en Dreamhost</a> , el último boletín explicaba (en su habitual inglés desquiciado) que se había activado el acceso por rsync a estas cuentas.   </p>
+
+<p>No negaremos que nos molestó que los de Dreamhost hayan conseguido que un post de este blog haya quedado casi obsoleto justo el día de su publicación, pero nos pusimos manos a la obra para adaptar nuestros scripts de backup para usar rsync.</p>
+
+<h3>Diferencias entre <tt>rsync</tt> y Duplicity</h3>
+
+<p>Si bien ambas herramientas cumplen con creces  su cometido de hacer un backup incremental </p>
+<ol>
+<li>En primer lugar, el espacio de backup que genera <tt>rsync</tt> contiene los ficheros originales, no archivos compactos.  Esto permite que, accediendo con un cliente (se me ocurren Cyberduck, tal vez inclso MacFUSE) podamos acceder directamente un archivo cualquiera.</li>
+<li>Por el contrario, perdemos el concepto de revisión de archivos que sí implementa Duplicity, una especie de TimeMachine: con Duplicity sería posible, por ejemplo, recuperar la versión de un archivo anterior a cierta fecha</li>
+<li>Como vimos en su post, Duplicity agrega un nivel adicional de seguridad al cifrar con GnuPG los archivos que genera.  Aunque nada nos impide cifrar nosotros manualmente los archivos que subamos via rsync, sería bastante más engorroso.</li>
+
+<li>Si el espacio en disco es un problema, podemos hacer que <tt>rsync</tt> elimine en el espacio remoto los archivos de nuestra copia local si nosotros los hemos borrado (lo cual podría ser peligroso si borramos inadvertidamente un archivo y ejecutamos el script de sincronización&#8230; habrmemos perdido el original ¡y la copia!)</li>
+</ol>
+
+<h3>El script de backup</h3>
+
+<p>Es tan sencillo como</p>
+
+{% highlight bash %}
+#!/bin/bash
+# este script reside en /Users/juan/bin/rsync-backup
+
+export PATH=/opt/local/bin:$PATH
+export HOST=backup.dreamhost.com
+export USER=nuestro_usuario
+
+cd $HOME
+rsync -zav --stats --progress --delete $1 $USER@$HOST:rsync
+{% endhighlight %}
+
+
+<p>Y, al igual que el script que usamos con Duplicity, se ejecuta fácilmente con</p>
+
+{% highlight bash %}
+rsync-backup Documents
+{% endhighlight %}
+
+
+<p>Que copiará los archivos del directorio <tt>Documents</tt> de nuestra cuenta sobre un directorio remoto <tt>rsync/Documents</tt>  El único problema es que nos pedirá nuestra clave cada vez que lancemos el proceso.  </p>
+
+<h3>Autenticación por clave pública</h3>
+
+<p>Una de las ventajas de usar <tt>rsync</tt> es que podemos usar <a href="http://faqs.pcbsd.es/index.php?action=artikel&#038;cat=14&#038;id=264&#038;artlang=es">autenticación de clave pública</a> de forma que sea posible acceder a nuestra cuenta sin utilizar una clave.  Una descripción detallada de los fundamentos de la autenticación vía SSH por clave pública puede encontrarse en el enlace anterior, así que nosotros nos limitaremos a mostrar los pasos imprescindibles para que funcione contra nuestra cuenta de backups en Dreamhost.</p>
+<p>Lo primero será crear el directorio <tt>.ssh</tt> en nuestra cuenta, si no existiera ya, y cambiarnos a él:</p>
+
+{% highlight bash %}
+mkdir $HOME/.ssh
+cd $HOME/.ssh
+{% endhighlight %}
+
+<p>Lo siguiente, generar nuestro par de claves:</p>
+
+{% highlight bash %}
+ssh-keygen -t rsa
+{% endhighlight %}
+
+
+<p>Esto nos generará un par de claves llamadas <tt>id_rsa</tt> e <tt>id_rsa.pub</tt>  Éste último es el archivo con la clave pública que es el que es el que podemos ir distribuyendo por nuestras máquinas. </p>
+
+<p><strong>Atención</strong> si <tt>ssh-keygen</tt> avisa de que ya existen  un fichero de claves con el mismo nombre, recomendamos no continuar con este proceso&#8230; podríamos sobreescribir otras claves que ya estén en uso.  En tal caso, si ya existe <tt>id_rsa.pub</tt> en el directorio .ssh de nuestra cuenta, podemos usarlo como si lo hubiéramos generado en el paso anterior.</p>
+
+<p>Lo único que nos queda ya es copiar nuestra clave pública a Dreamhost en el archivo <tt>.ssh/authorized_keys</tt> de nuestra cuenta:</p>
+
+{% highlight bash %}
+cd $HOME/.ssh
+scp id_rsa.pub usuario_backup@backup.dreamhost.com:.ssh/authorized_keys
+{% endhighlight %}
+
+<p>Y ¡bingo! la próxima vez que lancemos nuestro script <tt>rsync-backup</tt> ya no nos debería preguntar por nuestra clave, lo que lo hace ideal para automatizarlo.</p>

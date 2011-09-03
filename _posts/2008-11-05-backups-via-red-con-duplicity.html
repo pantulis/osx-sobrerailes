@@ -1,0 +1,72 @@
+---
+layout: post
+---
+<p>Este blog se encuentra alojado en <a href="http://www.dreamhost.com">Dreamhost</a>, que es un servicio de alojamiento que recomiendo para pequeños proyectos y cosas personales.    este proveedor proporciona un espacio en disco ridículamente enorme con la salvedad de que no puede ser usado para nada que no esté colgado en una web, lo que impide su uso como espacio de backup (lo cual, dicho sea de paso, es el doble de ridículo)    Los usuarios de Dreamhost, sin embargo, han descubierto que pueden subir prácticamente <em>cualquier cosa</em> a sus cuentas (violando así las normas de uso) y normalmente no pasa nada (salvo en casos patológicos de usuarios que alojan colecciones de DVDs) </p>
+
+<p>Pues bien, una de las novedades que han introducido recientemente es la de proporcionar <a href="http://wiki.dreamhost.com/V10.08_August_2008">un espacio de 50GB</a> a todos los usuarios para que lo utilicen de copia de seguridad y, esta vez,no hay restricción alguna (salvo la que era de esperar, o sea, que los  contenidos no infrinjan las leyes de copyright).  </p>
+<p>En esta entrada voy a describir el sistema que he montado en mi Mac Mini para guardar en este espacio de backups de Dreamhost una copia de seguridad remota de los directorios escogidos por mi.</p>
+<p>En primer lugar, se trata de escoger una herramienta de backups.  Como Dreamhost no ofrece rsync o ssh en las cuentas de backup, tendremos que buscar una aplicación que pueda funcionar con los protocolos FTP y SFTP.   De todas las que he estado probando la más eficaz es <a href="http://duplicity.nongnu.org/">Duplicity</a>, que puede trabajar no sólo con FTP/SFTP sino que además soporta, por supuesto, Rsync sobre SSH e incluso S3.  Esto puede ser interesante por si algún día queremos migrar nuestros backups a otros alojamientos.</p>
+<h2>Presentando a Duplicity</h2>
+<p>Duplicity son un conjunto de scripts en Python que se encargan de gestionar un backup incremental de los directorios que le digamos.  Esto es, la primera que lo ejecutemos generarán una serie de archivos comprimidos en el destino con los contenidos del directorio en cuestión y, tras este primer volcado, tanto las modificaciones efectuadas en el directorio (como añadir o eliminar archivos) como los cambios en los contenidos de los archivos serán propagadas como diferencias sobre lo ya subido.   Todo esto por supuesto es transparente para nosotros y además se hace de la manera más eficiente posible (por algo Duplicity utiliza el mismo backend que rsync).  Otra ventaja de Duplicity es que es tremendamente robusto: si el proceso se interrumpe abruptamente (por ejemplo porque nos cansamos en un momento dado), la siguiente operación continúa sin problemas por donde se quedó la última vez (por ejemplo si se nos cae el router cuando llevamos 20 de 21 Gigas de backup, bastará con lanzar el backup otra vez y Duplicity subirá sólo lo que le quedaba)</p>
+<p>Los inconvenientes de utilizar Duplicity son los que ya nos podemos imaginar.  En primer lugar es muy agresivo con el ancho de banda y ocupa todo el que pueda y un poco más (esto veremos cómo solventarlo con filtros de throttling de ancho de banda en algún post futuro)  El segundo problema es que nuestra copia de seguridad es, precisamente, una copia de seguridad y no es una copia viva de nuestros archivos.  No podemos conectarnos a nuestro FTP y descargar el archivo que queramos, sino que tendríamos que decirle a Duplicity que se descargase tal archivo y, si bien Duplicity no tendrá problema en traernos la última revisión del mismo, tendrá que bajar posiblemente varios volúmenes comprimidos donde se encuentren los diferentes deltas que conforman la última copia, para lo que evidentemente tendrá que tardar más.    Y, para acabar, aunque es posible no creo que sea precisamente sencillo recuperar un archivo sin utilizar Duplicity.</p>
+
+<h2>Instalación de Duplicity</h2>
+<p>Otra de las ventajas de Duplicity es que es muy sencillo instalarlo si usamos <a href="http://www.macports.org/">MacPorts</a> (si no lo tienes instalado, <a href="http://www.macports.org/install.php">no pierdas ni un minuto</a>)  Usando MacPorts, es tan sencillo como lanzar&#8230;</p>
+
+<code>
+	  sudo port install duplicity
+</code>
+
+<p>Y tras un rato más o menos largo dependiendo de nuestra conexión y CPU  (posiblemente MacPorts instale su propia versión de Python 2.5) , duplicity se encontrará instalado en /opt/local/bin (o donde tengamos instalado nuestro árbol de <em>ports</em>) y tras esto ya podemos continuar con nuestro proceso de bacup.</p>
+<h2>El script de backup</h2>
+<p>Nuestra idea es poder hacer un backup incremental de cualquier directorio que cuelgue en la cuenta de nuestro usuario en el Mac.    El script para hacer esto con Duplicity es muy sencillo:</p>
+
+{% highlight bash %}
+#!/bin/bash
+
+export PATH=/opt/local/bin:$PATH
+
+export FTP_PASSWORD=nuestra_clave_ftp
+export MYUSER=blahblah
+export MYHOST=backup.dreamhost.com
+export PASSPHRASE=nuestra_passphrase
+
+
+cd $HOME
+duplicity -v9 --ssh-askpass --gpg-options "--cipher-algo=AES256" $1 ftp://$MYUSER@$M
+{%endhighlight%}
+
+<p>Si llamamos a este archivo <tt>duplicity-backup</tt> y lo guardamos en algún directorio de nuestro PATH (mi favorito siempre es <tt>/Users/juan/bin</tt>) la forma de usarlo será pasándole la ruta relativa del directorio a guardar desde nuestro directorio raíz.</p>
+
+{% highlight bash %}
+
+duplicity-backup Documents/mi-directorio-a-guardar	
+{%endhighlight%}
+
+
+<p>Y nos guardará una copia de seguridad de <tt>/Users/juan/Documents/mi-directorio-a-guardar</tt> en un directorio llamado <tt>/duplicity/Documents/mi-directorio-a-guardar</tt> en nuestra cuenta de FTP de Dreamhost.   </p>
+
+<p>Las variables <tt>FTP_PASSWORD</tt>, <tt>MYUSER</tt> y <tt>MYHOST</tt> hacen referencia, respectivamente, a la clave, usuario y host donde vamos a hacer la copia de seguridad, información que podemos obtener desde el panel de control de Dreamhost.  </p>
+<p>La variable <tt>PASSPHRASE</tt> es otra clave más que se usará para cifrar los volúmenes del backup con GnuPG.   Si alguien obtuviese acceso o hackease nuestro espacio de FTP, se encontrará con que son inservibles si no se conoce esta clave (el algoritmo de cifrado, como puede verse, es AES256&#8230; esto puede cambiarse por cualquier otro algoritmo soportado por nuestra instalación de GnuPG)</p>
+
+<p>Por último, la opción <tt>-v9</tt> hace que Duplicity muestre toda la información posible por pantalla.  Me gusta ver montones de mensajes que no entiendo haciendo scroll en los terminales.  </p>
+<h2>El script de recuperación</h2>
+<p>De nada serviría hacer un backup si no lo podemos recuperar de alguna manera.  Para eso, podemos usar otro script que podemos poner en el mismo sitio que el anterior:</p>
+
+{% highlight bash %}
+#!/bin/bash
+
+export PATH=/opt/local/bin:$PATH
+
+export FTP_PASSWORD=nuestra_clave_ftp
+export MYUSER=blahblah
+export MYHOST=backup.dreamhost.com
+export PASSPHRASE=nuestra_passphrase
+
+
+duplicity -v9 --ssh-askpass --gpg-options "--cipher-algo=AES256" ftp://$MYUSER@$MYHOST/duplicity/$1 $1
+{% endhighlight %}
+
+
+<p>Este script recuperará nuestro directorio al completo, si lo lanzamos desde <tt>$HOME</tt> se recuperará el directorio en su sitio directamente, posiblemente machacando nuestras modificaciones si las hubo.  Mi recomendación en estos casos es cambiarnos a un directorio temporal (por ejemplo <tt>$HOME/tmp</tt>) y recuperar ahí el directorio, para luego copiarlo a su sitio (siempre que el espacio en disco nos lo permita, claro)</p>
+<p>Queda claro que estos scripts son sólo bocetos que pueden perfeccionarse todo lo que uno quiera (por ejemplo, hacer un script que <em>verifique</em> que la copia de seguridad se ha hecho bien es bastante sencillo, y se deja como ejercicio para el lector (siempre quise decir esto)</p>

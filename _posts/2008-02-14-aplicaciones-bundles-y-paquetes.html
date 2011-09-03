@@ -1,0 +1,65 @@
+---
+layout: post
+title: Aplicaciones, bundles y paquetes
+---
+
+<p>
+Probablemente una de las experiencias más extrañas para el recién llegado a Mac OS X sea descubrir que los programas se comportan de una manera semimágica y a la que no estamos acostumbrados.   Uno puede instalar un programa en cualquier sitio, incluso en el escritorio, y la aplicación funciona sin mayor inconveniente.  Pero, para mayor sorpresa, uno puede coger una aplicación ya existente, <em>cambiarla de sitio</em> y ésta sigue funcionando.  No intenten esto en otro sistema operativo.
+</p>
+<p>Después de indagar un poco más, uno descubre que realmente las aplicaciones no son más que directorios que reciben un cierto tratamiento especial por parte del Finder.  Para verlo, simplemente tenemos que hacer lo siguiente:
+
+</p>
+<pre><code>
+Tamarindo:~ juan$ open /Applications/Utilities/Calculator.app
+</code></pre>
+<p>Y veremos que aparece en nuestra pantalla la conocida calculadora. No parece haber mucha diferencia con Windows aquí: simplemente la extensión de los ejecutables aquí<br />
+es <tt>.app</tt> en lugar de <tt>.exe</tt>, ¿no? Pues no, examinando más de cerca&#8230;</p>
+<pre><code>
+Tamarindo:~ juan$ ls -ld /Applications/Calculator.app
+drwxrwxr-x  3 root  admin  102 Sep 26 01:21 /Applications/Calculator.app
+</code></pre>
+<p>
+
+Vemos que <strong>Calculator.app</strong> no es un fichero normal, sino un directorio, cuyos contenidos son:
+</p>
+<pre><code>
+Tamarindo:~ juan$ ls -lt /Applications/Calculator.app/
+total 0
+drwxrwxr-x  9 root  admin  306 Oct 11 02:19 Contents
+</code></pre>
+<p>Y, más dentro aún:</p>
+<pre><code>
+Tamarindo:~ juan$ ls -lt Applications/Calculator.app/Contents/
+total 40drwxrwxr-x  39 root  admin  1326 Jan 14 20:47 Resources
+-rw-rw-r--   1 root  admin  4816 Oct 11 02:19 CodeResources
+drwxrwxr-x   3 root  admin   102 Oct 11 02:19 MacOS
+-rw-rw-r--   1 root  admin   448 Oct 11 02:19 version.plist
+drwxrwxr-x   4 root  admin   136 Oct 11 02:19 PlugIns
+-rw-rw-r--   1 root  admin  1229 Oct 11 02:19 Info.plist
+-rw-rw-r--   1 root  admin     8 Oct 11 02:19 PkgInfo
+</code></pre>
+<p>Así pues, lo que desde el Finder parece un ejecutable cualquiera realmente consiste en toda una jerarquía de directorios que contienen toda la información necesaria para ejecutar la aplicación.  Esto se conoce como <em>bundle</em></p>
+<h3>Bundles</h3>
+
+<p>Un <em>bundle</em> (la traducción al castellano más cercana que encuentro es <em>fardo</em>) es precisamente una estructura de directorios que contiene toda la información de  la que hemos hablado antes.  Algunos de los recursos que se pueden incluir en un <em>bundle</em> son ejecutables para diferentes arquitecturas (por ejemplo Intel y PPC) e incluso diferentes plataformas (por ejemplo OSX y OS 9), recursos localizables, iconos, sonidos, archivos de definición de interfaces de la aplicación (nibs), etc.  Todo lo necesario para ejecutar una aplicación está contenido en su <em>bundle</em>, de forma que poner un <em>bundle</em> en una unidad de red significa que la aplicación está disponible para todos los ordenadores, sin necesidad de instalar librerías dinámicas adicionales. </p>
+<p>El Finder reconoce toda esta información, de manera que si tenemos Mac OS X en castellano la aplicación muestra en el Finder <em>su nombre en castellano</em>, no el nombre del directorio.  Existen varios tipos de <em>bundles</em>  Los que nos interesan, porque albergan las aplicaciones, se conocen como <em>bundles modernos</em> , y son aquellos cuyo contenido en el primer nivel es únicamente un directorio <tt>Contents</tt> (es el caso de la Calculadora)</p>
+
+<p> Otros tipos de <em>bundles</em> son los <em>Frameworks</em> (esto incluye los grandes APIs principales de Mac OS X, como Cocoa) que usan un formato diferente.</p>
+<h3>Paquetes</h3>
+<p>¿Cómo sabe el Finder que un directorio contiene un <em>bundle</em> con una aplicación?  La respuesta consiste en decir que una carpeta concreta es un <em>paquete</em>.  Nosotros mismos podemos crear nuestros propios paquetes aunque no sean <em>bundles</em> (necesitamos tener instaladas las herramientas XCode)</p>
+
+<p>Aquí tenemos un directorio con una estructura de archivos y carpetas totalmente arbitraria:</p>
+<p><img src='/images/paquetes-bundles-1.png' alt='paquetes-bundles-1.png' /></p>
+<p>La utilidad <tt>SetFile</tt> nos permite establecer que una carpeta es un paquete:</p>
+<pre><code>
+Tamarindo:~ juan$ /Developer/Tools/SetFile -a B mydir/
+</code></pre>
+<p> Si ahora abrimos otra ventana de Finder y buscamos el directorio, nos encontraremos con lo siguiente:  </p>
+<p><img src='/images/paquetes-bundles-2.png' alt='paquetes-bundles-2.png' /></p>
+<p>Ahora en el escritorio el directorio se ha convertido en una especie de archivo (de clase “paquete”).La idea de los paquetes es sencilla: se trata de ocultar los contenidos de un directorio a los usuarios para evitar que hagan modificaciones peligrosas en archivos vitales para el funcionamiento de las aplicaciones.  Quede claro que no se trata de una medida de seguridad contra intrusos porque cualquier usuario -que tenga permisos de acceso al archivo, claro- puede escoger <strong>Ver contenidos del paquete</strong> en el menú contextual del archivo y se abrirá una ventana mostrando los contenidos del paquete.</p>
+
+<p>¿Se utilizan paquetes que no contengan <em>bundles</em>?  Sí.  Existen los <em>paquetes documentos</em> que son paquetes que contienen versiones diferntes de un mismo documento en varios formatos.  Por ejemplo, nuestra aplicación podría manejar tipos de archivo a veces como una imagen JPEG y otras veces como un fichero XML con metadatos.  En un <em>paquete documento</em> podemos meter ambas representaciones y nuestra aplicación podría escoger entre una y otra, según convenga.  En este caso, al ser un paquete, el usuario tendría la ilusión de estar manipulando una única cosa en el sistema de archivos.
+</p>
+<h3>Resumiendo</h3>
+<p>Un <em>bundle</em> es un conjunto de directorios que contiene todos los recursos necesarios para ejecutar una aplicación.  Un <em>paquete</em> es un directorio con un atributo especial que el Finder presentará como una única entidad en el sistema de archivos.Por último, en Mac OS X las <strong>aplicaciones</strong> son <em>paquetes</em> que contienen <em>bundles</em></p>
+

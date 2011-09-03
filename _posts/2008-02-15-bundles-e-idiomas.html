@@ -1,0 +1,17 @@
+---
+layout: post
+title: Bundles e idiomas
+---
+
+			<p>En una entrada anterior <a href="http://mac.sobrerailes.com/2008/01/27/aplicaciones-bundles-y-paquetes/">hablábamos de los bundles</a>, que son la forma que tiene OS X de organizar las carpetas que conforman una aplicación.  Veíamos también que el Finder trata de manera especial los directorios marcados como <em>paquetes</em>, y que una aplicación por lo general es un <em>bundle</em> con el atributo <em>paquete</em> activo.  Todo este tinglado permite al sistema tener perfectamente controlados los recursos que gestiona una aplicación.  Y, por extensión, nosotros tendremos un control más fino sobre dichos recursos.  Veremos en este <em>post</em> un ejemplo.
+
+</p>
+<p> Una aplicación normalmente soporta varios idiomas, y para esto el recurso básico son los ficheros de localización de cadenas, donde se guardan todas las cadenas traducidas en tal o cual idioma.  En tiempo de ejecución y, dependiendo de la configuración del sistema, se carga el fichero correspondiente al idioma en curso.  Hasta aquí nada nuevo.</p>
+<p>Pero, si en el Finder escogemos una aplicación y pulsamos <tt>CMD+I</tt>, aparecerá el panel de información de la aplicación y podremos escoger en el apartado Idiomas.</p>
+<p><img src='/images/bundles-e-idiomas-1.png' alt='bundles-e-idiomas-1.png' /></p>
+<p>Si queremos eliminar el soporte de localización para un idioma concreto (por ejemplo, el chino tradicional), podemos escogerlo y pulsar el botón &#8216;-&#8217;.  Esto eliminará inmediatamente el soporte del lenguaje de la aplicación, pero ¿y si no estamos seguros de eliminar los idiomas necesarios?  En ese caso podremos simplemente <em>desmarcar</em> los idiomas seleccionados, que irán desapareciendo del cuadro -con el característico sonido de operación sobre archivos de Finder-&#8230; sin embargo esta vez no se borrarán.  Si seleccionamos la aplicación en Finder y escogemos en el menú contextual la opción &#8220;Mostrar contenido del paquete&#8221; nos encontraremos con lo siguiente:</p>
+
+<p><img src='/images/bundles-e-idiomas-2.png' alt='bundles-e-idiomas-2.png' /></p>
+<p>Podemos comprobar en este caso los idiomas eliminados han sido movidos a una carpeta temporal de nombre <tt><strong>Resources Disabled</strong></tt> de donde podremos borrarlos cuando estemos seguros de que realmente no necesitabamos esos archivos. </p>
+<p>Ni qué decir tiene que este procedimiento es el que automatizan las aplicacione como<a href="http://monolingual.sourceforge.net"> Monolingual</a></p>
+<p>.</p>
